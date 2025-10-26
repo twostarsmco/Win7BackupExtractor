@@ -106,7 +106,6 @@ def enumerate_zips(args: argparse.Namespace) -> List[Path]:
             p = Path(f)
             if p.is_file() and p.suffix.lower() == ".zip" and p.name.lower().startswith(ZIP_NAME_PREFIX.lower()):
                 zips.append(p)
-    zips.sort(key=zip_sort_key)
     return zips
 
 # Helpers
@@ -244,6 +243,7 @@ def merge_parts(parts_map: Dict[str, List[Path]], dest_root: Path, log: SummaryL
 def process_zips(zips: List[Path], user_encoding: str | None) -> int:
     if not zips:
         return 0
+    zips.sort(key=zip_sort_key)
     dest_root = Path(zips[0]).resolve().parent
     dest_root.mkdir(parents=True, exist_ok=True)
     log = SummaryLog()
@@ -288,7 +288,6 @@ def process_dir(dir_root: Path, user_encoding: str | None) -> int:
         for p in dir_root.iterdir():
             if p.is_file() and p.suffix.lower() == ".zip" and p.name.lower().startswith(ZIP_NAME_PREFIX.lower()):
                 zips.append(p)
-    zips.sort(key=zip_sort_key)
     return process_zips(zips, user_encoding)
 
 # Main
