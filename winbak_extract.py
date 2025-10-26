@@ -242,6 +242,8 @@ def merge_parts(parts_map: Dict[str, List[Path]], dest_root: Path, log: SummaryL
 # Core processing from a list of zips
 
 def process_zips(zips: List[Path], user_encoding: str | None) -> int:
+    if not zips:
+        return 0
     dest_root = Path(zips[0]).resolve().parent
     dest_root.mkdir(parents=True, exist_ok=True)
     log = SummaryLog()
