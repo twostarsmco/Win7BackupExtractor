@@ -174,12 +174,16 @@ def concat_parts_python(parts: List[Path], tmp_merge: Path) -> None:
 def merge_parts(parts_map: Dict[str, List[Path]], dest_root: Path, log: SummaryLog) -> None:
     tmp_root = dest_root / TMP_DIR_NAME
     for key, parts in parts_map.items():
-        first_part = parts[0]
-        original_name = first_part.name.rsplit(".part_", 1)[0]
-        # final directory mirrors the internal path under dest_root
-        final_dir = dest_root / (first_part.parent.relative_to(tmp_root))
-        final_dir.mkdir(parents=True, exist_ok=True)
-        final_path = final_dir / original_name
+        try:
+            first_part = parts[0]
+            original_name = first_part.name.rsplit(".part_", 1)[0]
+            # final directory mirrors the internal path under dest_root
+            final_dir = dest_root / (first_part.parent.relative_to(tmp_root))
+            final_dir.mkdir(parents=True, exist_ok=True)
+            final_path = final_dir / original_name
+        except Exception as exc:
+            log.errors.append(f"Failed to process {key}: {exc}")
+            continue
 
         # Overwrite policy: fail if final exists
         if final_path.exists():
@@ -190,16 +194,12 @@ def merge_parts(parts_map: Dict[str, List[Path]], dest_root: Path, log: SummaryL
         # Fast path: single staged part, avoid extra copy
         if len(parts) == 1:
             try:
-                expected = sum(p.stat().st_size for p in parts)
-                actual = first_part.stat().st_size
-                if actual != expected:
-                    raise ValueError(f"Merged size mismatch in single-part: expected={expected}, actual={actual}")
                 os.replace(to_long_path(first_part), to_long_path(final_path))
                 log.merged.append((str(final_path), 1))
                 continue
             except Exception:
-                # Fall through to normal merge path
-                pass
+                log.errors.append(f"Failed to copy a single staged part: {final_path}")
+                continue
 
         # tmp merge file lives under the temp directory to avoid collisions
         tmp_merge = first_part.parent / (original_name + ".__merge_tmp")
@@ -242,6 +242,8 @@ def merge_parts(parts_map: Dict[str, List[Path]], dest_root: Path, log: SummaryL
 # Core processing from a list of zips
 
 def process_zips(zips: List[Path], user_encoding: str | None) -> int:
+    if not zips:
+        return 0
     dest_root = Path(zips[0]).resolve().parent
     dest_root.mkdir(parents=True, exist_ok=True)
     log = SummaryLog()
