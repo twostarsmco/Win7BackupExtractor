@@ -194,8 +194,8 @@ def merge_parts(parts_map: Dict[str, List[Path]], dest_root: Path, log: SummaryL
                 log.merged.append((str(final_path), 1))
                 continue
             except Exception:
-                # Fall through to normal merge path
-                pass
+                log.errors.append(f"Failed to copy a single staged part: {final_path}")
+                continue
 
         # tmp merge file lives under the temp directory to avoid collisions
         tmp_merge = first_part.parent / (original_name + ".__merge_tmp")
