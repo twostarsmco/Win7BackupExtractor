@@ -190,10 +190,6 @@ def merge_parts(parts_map: Dict[str, List[Path]], dest_root: Path, log: SummaryL
         # Fast path: single staged part, avoid extra copy
         if len(parts) == 1:
             try:
-                expected = sum(p.stat().st_size for p in parts)
-                actual = first_part.stat().st_size
-                if actual != expected:
-                    raise ValueError(f"Merged size mismatch in single-part: expected={expected}, actual={actual}")
                 os.replace(to_long_path(first_part), to_long_path(final_path))
                 log.merged.append((str(final_path), 1))
                 continue
