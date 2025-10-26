@@ -135,8 +135,14 @@ def stage_extract(zips: List[Path], dest_root: Path, log: SummaryLog, user_encod
     parts_map: Dict[str, List[Path]] = {}
     tmp_root = dest_root / TMP_DIR_NAME
     tmp_root.mkdir(parents=True, exist_ok=True)
-
-    for zp in zips:
+    total_zips = len(zips)
+    for i, zp in enumerate(zips, start=1):
+        # progress: show which ZIP is being processed
+        try:
+            print(f"Processing ZIP {i}/{total_zips}: {zp.name}", file=sys.stderr, flush=True)
+        except Exception:
+            # best-effort progress printing; don't fail extraction if print fails
+            pass
         try:
             with zipfile.ZipFile(to_long_path(zp)) as zf:
                 for info in zf.infolist():
@@ -172,7 +178,8 @@ def concat_parts_python(parts: List[Path], tmp_merge: Path) -> None:
 
 def merge_parts(parts_map: Dict[str, List[Path]], dest_root: Path, log: SummaryLog) -> None:
     tmp_root = dest_root / TMP_DIR_NAME
-    for key, parts in parts_map.items():
+    total_items = len(parts_map)
+    for idx, (key, parts) in enumerate(parts_map.items(), start=1):
         try:
             first_part = parts[0]
             original_name = first_part.name.rsplit(".part_", 1)[0]
@@ -181,11 +188,30 @@ def merge_parts(parts_map: Dict[str, List[Path]], dest_root: Path, log: SummaryL
             final_dir.mkdir(parents=True, exist_ok=True)
             final_path = final_dir / original_name
         except Exception as exc:
+            # print per-item failure and continue
+            try:
+                print(f"Merging item {idx}/{total_items}: {key} - FAILED: {exc}", file=sys.stderr, flush=True)
+            except Exception:
+                pass
             log.errors.append(f"Failed to process {key}: {exc}")
             continue
 
+        # print progress (in-place style)
+        try:
+            display_path = str(final_path.relative_to(dest_root))
+        except Exception:
+            display_path = str(final_path)
+        try:
+            print(f"\rMerging item {idx}/{total_items}: {display_path}", end="", file=sys.stderr, flush=True)
+        except Exception:
+            pass
+
         # Overwrite policy: fail if final exists
         if final_path.exists():
+            try:
+                print(f"\rMerging item {idx}/{total_items}: {display_path} - SKIPPED (exists)", file=sys.stderr, flush=True)
+            except Exception:
+                pass
             log.skipped_existing.append(str(final_path))
             log.errors.append(f"Final already exists (overwrite not allowed): {final_path}")
             continue
@@ -195,6 +221,10 @@ def merge_parts(parts_map: Dict[str, List[Path]], dest_root: Path, log: SummaryL
             try:
                 os.replace(to_long_path(first_part), to_long_path(final_path))
                 log.merged.append((str(final_path), 1))
+                try:
+                    print(f"\rMerging item {idx}/{total_items}: {display_path} - OK", file=sys.stderr, flush=True)
+                except Exception:
+                    pass
                 continue
             except Exception:
                 log.errors.append(f"Failed to copy a single staged part: {final_path}")
@@ -231,7 +261,18 @@ def merge_parts(parts_map: Dict[str, List[Path]], dest_root: Path, log: SummaryL
                     Path(p).unlink(missing_ok=True)
                 except Exception:
                     pass
+
+            # final success print
+            try:
+                print(f"\rMerging item {idx}/{total_items}: {display_path} - OK", file=sys.stderr, flush=True)
+            except Exception:
+                pass
         except Exception as exc:
+            # print failure and continue
+            try:
+                print(f"\rMerging item {idx}/{total_items}: {display_path} - FAILED: {exc}", file=sys.stderr, flush=True)
+            except Exception:
+                pass
             log.errors.append(f"Failed to merge {final_path}: {exc}")
             try:
                 Path(tmp_merge).unlink(missing_ok=True)

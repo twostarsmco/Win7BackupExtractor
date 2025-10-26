@@ -26,6 +26,7 @@ This repository contains a Python 3.x script to extract and reconstruct files fr
     - `--set <folder>`: Parent folder containing multiple "Backup Files" folders. Only immediate children are scanned.
     - `--encoding <codec>`: Filename decoding when ZIP entries are not UTF-8.
   - Modules used: `argparse`, `pathlib`, `zipfile`, `shutil`, `subprocess`, `os`, `sys`.
+  - Progress output: the script prints processing progress to stderr during runtime (per-ZIP and per-merge item progress).
   - Long path helper: `to_long_path(Path)` must be used for file operations.
   - Summary logging: `SummaryLog` collects merged outputs, skips, and errors, writing timestamped `winbak_extract_summary_YYYYMMDDTHHMMSS.txt` to each processed folder.
 - `README.md`: Usage, behavior, path length notes, exit codes, examples.
