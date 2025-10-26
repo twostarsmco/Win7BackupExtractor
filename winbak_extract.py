@@ -250,8 +250,6 @@ def process_zips(zips: List[Path], user_encoding: str | None) -> int:
     ret = 0
     try:
         log.zips_processed = len(zips)
-        if not zips:
-            return 0
         parts_map = stage_extract(zips, dest_root, log, user_encoding)
         merge_parts(parts_map, dest_root, log)
     except Exception as exc:
