@@ -5,7 +5,6 @@ A simple, maintainable Python 3.x script to extract and reconstruct files from W
 ## Requirements
 
 - Python 3.x on Windows.
-- No external dependencies (stdlib only).
 
 ## Usage
 
@@ -17,11 +16,25 @@ Run from this folder or provide full paths.
 - From explicit ZIP paths:
   `python winbak_extract.py --files "C:\\Backups\\Backup files 1.zip" "C:\\Backups\\Backup files 2.zip"`
 
+- From a parent folder containing multiple "Backup Files" folders:
+  `python winbak_extract.py --set "C:\\BackupSets"`
+
 - Optional filename encoding (used when ZIP entries aren't UTF-8):
   `python winbak_extract.py --encoding cp932 --dir "C:\\Backups"`
   - If UTF-8 flag is set in a ZIP entry, UTF-8 is used regardless.
   - If UTF-8 flag is not set and `--encoding` is provided, that codec is used. Refer to [Standard Encodings on Python documentation](https://docs.python.org/3/library/codecs.html#standard-encodings) for available codecs.
   - If UTF-8 flag is not set and `--encoding` is omitted, CP437 is used per ZIP spec.
+
+## Examples
+
+- Basic directory processing:
+  `python winbak_extract.py --dir "D:\\Win7Backup"`
+
+- Process a Backup Set folder (immediate children only):
+  `python winbak_extract.py --set "D:\\Win7BackupSet"`
+
+- Explicit files:
+  `python winbak_extract.py --files "D:\\Win7Backup\\Backup files 1.zip" "D:\\Win7Backup\\Backup files 2.zip"`
 
 ## Behavior
 
@@ -33,7 +46,7 @@ Run from this folder or provide full paths.
 - Dedupe behavior: identical duplicates are always treated as parts and concatenated.
 - Deletes staged part files after a successful merge.
 - Optimized single-part handling: if only one part exists, it is moved directly to the final destination (size-verified) instead of re-copying.
-- Writes timestamped summary logs `winbak_extract_summary_YYYYMMDDTHHMMSS.txt` (merged files, part counts, skips, errors) to each processed folder.
+- Writes timestamped summary logs `winbak_extract_YYYYMMDDTHHmmSS+HHMM.txt` (merged files, part counts, skips, errors) to each processed folder.
 - Serial processing; streams I/O; avoids loading entire files into memory.
 
 ## Path Length
@@ -51,14 +64,3 @@ Run from this folder or provide full paths.
 - Aligns with the manual guidance for combining split parts using `copy /b`, but avoids wildcard patterns and enforces explicit order.
 - Final outputs are written under `<dest>\\<internal_path>\\<name>`; temp artifacts live under `<dest>\\.winbak_tmp`.
 - On completion (even if failures occurred), empty directories under .winbak_tmp are pruned bottom-up; the root is removed if the tree is empty.
-
-## Examples
-
-- Basic directory processing:
-  `python winbak_extract.py --dir "D:\\Win7Backup"`
-
-- Process a Backup Set folder (immediate children only):
-  `python winbak_extract.py --set "D:\\Win7BackupSet"`
-
-- Explicit files:
-  `python winbak_extract.py --files "D:\\Win7Backup\\Backup files 1.zip" "D:\\Win7Backup\\Backup files 2.zip"`
